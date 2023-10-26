@@ -6,28 +6,6 @@ from torch.nn.utils import weight_norm
 
 from data_process import TimeSeriesDataset, data_process
 
-train_data, _ = data_process()
-
-# ########## 测试（不加时间数据）
-ground_truth = np.array([train_data['active_index'], train_data['consume_index']])
-ground_truth = list(zip(*ground_truth))
-# ########## 测试
-
-# 示例数据
-data = np.array(train_data)
-
-X = data[:, 2:-2].astype(float)
-y = data[:, -2:].astype(float)
-
-# # 转换为PyTorch张量
-X = torch.tensor(X, dtype=torch.float32)
-y = torch.tensor(y, dtype=torch.float32)
-#
-# 创建数据加载器
-batch_size = 30
-dataset = TimeSeriesDataset(X, y)
-dataloader = DataLoader(dataset, batch_size=batch_size)
-
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
@@ -123,37 +101,3 @@ class TCN(nn.Module):
         y1 = y1[:, :, -1]  # (batch_size, hidden_channel)
         return self.linear(y1)  # (batch_size, output_size)
 
-
-# 参数设置
-input_size = 1
-output_size = 2
-num_channels = [68] * 4
-kernel_size = 2
-dropout = 0.2
-model = TCN(input_size, output_size, num_channels, kernel_size, dropout)
-
-# 损失函数
-criterion = nn.MSELoss()
-
-# 优化器
-lr = 0.001
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
-# 训练
-epochs = 5
-for epoch in range(epochs):
-    total_loss = 0
-    for i, (X, y) in enumerate(dataloader):
-        y_pred = model(X.unsqueeze(1))
-        loss = criterion(y_pred, y)
-        loss = torch.sqrt(loss)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-        # 每20个batch打印一次损失
-        if (i + 1) % 20 == 0:
-            print('Epoch {}, Batch {}/{}, Loss {}'.format(epoch + 1, i + 1, len(dataloader), loss.item()))
-
-    # 每个epoch打印一次平均损失
-    print('Epoch {}, Loss {}'.format(epoch + 1, total_loss / len(dataloader)))

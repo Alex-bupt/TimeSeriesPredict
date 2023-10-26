@@ -18,7 +18,14 @@ def data_process():
     train_data[train_features] = scaler.fit_transform(train_data[train_features])
     edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
 
-    return train_data, edge_data
+    # 切分数据集
+    cnt = int(len(train_data)/30)
+
+    # 将cnt*0.8取整作为训练集，剩下的作为验证集
+    train_data = train_data[:int(cnt*0.9)*30]
+    valid_data = train_data[int(cnt*0.9)*30:]
+
+    return train_data, valid_data, edge_data
 
 
 def graph_build(train_data, edge_data):
