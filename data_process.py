@@ -5,25 +5,25 @@ from torch.utils.data import Dataset
 
 
 def data_process():
-    train_data = pd.read_csv('./dataset/train_90.csv')
+    node_data = pd.read_csv('./dataset/train_90.csv')
     edge_data = pd.read_csv('./dataset/edge_90.csv')
 
-    train_features = train_data.columns[2:-2]
+    train_features = node_data.columns[2:-2]
     edge_features = edge_data.columns[2:-2]
 
     # 创建一个MinMaxScaler对象
     scaler = MinMaxScaler()
 
     # 使用fit_transform方法对选定的特征列进行归一化
-    train_data[train_features] = scaler.fit_transform(train_data[train_features])
+    node_data[train_features] = scaler.fit_transform(node_data[train_features])
     edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
 
     # 切分数据集
-    cnt = int(len(train_data)/30)
+    cnt = int(len(node_data)/30)
 
     # 将cnt*0.8取整作为训练集，剩下的作为验证集
-    train_data = train_data[:int(cnt*0.9)*30]
-    valid_data = train_data[int(cnt*0.9)*30:]
+    train_data = node_data[:int(cnt*0.9)*30]
+    valid_data = node_data[int(cnt*0.9)*30:]
 
     return train_data, valid_data, edge_data
 

@@ -45,7 +45,7 @@ if "__main__" == __name__:
     # ########## 测试（不加时间数据）
 
     # 参数设置
-    input_size = 1
+    input_size = 35
     output_size = 2
     num_channels = [68] * 4
     kernel_size = 2
@@ -59,12 +59,15 @@ if "__main__" == __name__:
     lr = 0.001
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+    best_loss = 999
+
+
     # 训练
-    epochs = 5
+    epochs = 20
     for epoch in range(epochs):
         total_loss = 0
         for i, (X, y) in enumerate(train_dataloader):
-            y_pred = model(X.unsqueeze(1))
+            y_pred = model(X.unsqueeze(2))
             loss = criterion(y_pred, y)
             loss = torch.sqrt(loss)
             optimizer.zero_grad()
@@ -75,10 +78,15 @@ if "__main__" == __name__:
                 print('Epoch {}, Batch {}/{}, Loss {}'.format(epoch + 1, i + 1, len(train_dataloader), loss.item()))
         # 验证(不进行参数更新）
         for j, (X, y) in enumerate(valid_dataloader):
-            y_pred = model(X.unsqueeze(1))
+            y_pred = model(X.unsqueeze(2))
             loss = criterion(y_pred, y)
             loss = torch.sqrt(loss)
             total_loss += loss.item()
 
+        if total_loss / len(valid_dataloader) < best_loss:
+            best_loss = total_loss / len(valid_dataloader)
+
         # 每个epoch打印一次平均损失
         print('Epoch {}, Valid_Loss {}'.format(epoch + 1, total_loss / len(valid_dataloader)))
+        print(f'best_loss{best_loss}')
+
