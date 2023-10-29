@@ -5,6 +5,11 @@ import torch.nn as nn
 import torch
 
 
+"""
+暂时性代码思路，预测还未用到GNN
+"""
+
+
 def uniform(size, tensor):
     bound = 1.0 / math.sqrt(size)
     if tensor is not None:

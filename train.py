@@ -1,3 +1,5 @@
+import os
+
 import CNN
 import numpy as np
 import torch
@@ -8,7 +10,7 @@ from data_process import TimeSeriesDataset, data_process
 
 if "__main__" == __name__:
 
-    train_data, valid_data, _ = data_process()
+    train_data, valid_data, _, _ = data_process()
 
     # ########## 测试（不加时间数据）
     train_ground_truth = np.array([train_data['active_index'], train_data['consume_index']])
@@ -60,10 +62,10 @@ if "__main__" == __name__:
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     best_loss = 999
-
+    save_dir = "save"
 
     # 训练
-    epochs = 20
+    epochs = 30
     for epoch in range(epochs):
         total_loss = 0
         for i, (X, y) in enumerate(train_dataloader):
@@ -86,7 +88,16 @@ if "__main__" == __name__:
         if total_loss / len(valid_dataloader) < best_loss:
             best_loss = total_loss / len(valid_dataloader)
 
+            # 保存最佳模型参数
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            # 以下是保存模型参数的代码
+            torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pth"))
+            print("save model！")
+
         # 每个epoch打印一次平均损失
         print('Epoch {}, Valid_Loss {}'.format(epoch + 1, total_loss / len(valid_dataloader)))
         print(f'best_loss{best_loss}')
+
 
