@@ -4,10 +4,10 @@ import CNN
 import numpy as np
 import torch
 
-from data_process import TimeSeriesDataset, data_process
+from data_process import TimeSeriesDataset, test_data_process
 
 if "__main__" == __name__:
-    _, _, node_data, edge_data = data_process(test=True)
+    node_data, edge_data = test_data_process()
 
     input_size = 35
     output_size = 2
@@ -17,7 +17,7 @@ if "__main__" == __name__:
 
     model = CNN.TCN(input_size, output_size, num_channels, kernel_size, dropout)
 
-    model_path = os.path.join("save", "best_model.pth")
+    model_path = os.path.join("save", "best_model_25.pth")
 
     # 加载保存的模型参数
     if os.path.exists(model_path):
@@ -67,4 +67,5 @@ if "__main__" == __name__:
         str) + "\t" + result_data["activity_level"].astype(str) + "\t" + result_data["date_id"].astype(str)
 
     # 保存结果数据到 "submit.csv" 文件，只保留一列
-    result_data[["merged_column"]].to_csv("submit.csv", index=False, header=["geohash_id\tconsumption_level\tactivity_level\tdate_id"])
+    result_data[["merged_column"]].to_csv("submit.csv", index=False,
+                                          header=["geohash_id\tconsumption_level\tactivity_level\tdate_id"])

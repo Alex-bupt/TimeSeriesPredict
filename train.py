@@ -10,7 +10,7 @@ from data_process import TimeSeriesDataset, data_process
 
 if "__main__" == __name__:
 
-    train_data, valid_data, _, _ = data_process()
+    train_data, valid_data, _ = data_process()
 
     # ########## 测试（不加时间数据）
     train_ground_truth = np.array([train_data['active_index'], train_data['consume_index']])
@@ -78,12 +78,14 @@ if "__main__" == __name__:
             # 每20个batch打印一次损失
             if (i + 1) % 20 == 0:
                 print('Epoch {}, Batch {}/{}, Loss {}'.format(epoch + 1, i + 1, len(train_dataloader), loss.item()))
+
         # 验证(不进行参数更新）
-        for j, (X, y) in enumerate(valid_dataloader):
-            y_pred = model(X.unsqueeze(2))
-            loss = criterion(y_pred, y)
-            loss = torch.sqrt(loss)
-            total_loss += loss.item()
+        with torch.no_grad():
+            for j, (X, y) in enumerate(valid_dataloader):
+                y_pred = model(X.unsqueeze(2))
+                loss = criterion(y_pred, y)
+                loss = torch.sqrt(loss)
+                total_loss += loss.item()
 
         if total_loss / len(valid_dataloader) < best_loss:
             best_loss = total_loss / len(valid_dataloader)
@@ -93,11 +95,9 @@ if "__main__" == __name__:
                 os.makedirs(save_dir)
 
             # 以下是保存模型参数的代码
-            torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pth"))
+            torch.save(model.state_dict(), os.path.join(save_dir, "best_model_" + epoch + ".pth"))
             print("save model！")
 
         # 每个epoch打印一次平均损失
         print('Epoch {}, Valid_Loss {}'.format(epoch + 1, total_loss / len(valid_dataloader)))
         print(f'best_loss{best_loss}')
-
-

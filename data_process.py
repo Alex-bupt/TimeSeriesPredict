@@ -4,7 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 
 
-def data_process(test=False):
+def data_process():
     node_data = pd.read_csv('./dataset/train_90.csv')
     edge_data = pd.read_csv('./dataset/edge_90.csv')
 
@@ -25,21 +25,24 @@ def data_process(test=False):
     train_data = node_data[:int(cnt * 0.9) * 30]
     valid_data = node_data[int(cnt * 0.9) * 30:]
 
-    if test:
-        node_data = pd.read_csv('./dataset/node_test_4_A.csv')
-        edge_data = pd.read_csv('./dataset/edge_test_4_A.csv')
+    return train_data, valid_data, edge_data
 
-        train_features = node_data.columns[2:-2]
-        edge_features = edge_data.columns[2:-2]
 
-        # 创建一个MinMaxScaler对象
-        scaler = MinMaxScaler()
+def test_data_process():
+    node_data = pd.read_csv('./dataset/node_test_4_A.csv')
+    edge_data = pd.read_csv('./dataset/edge_test_4_A.csv')
 
-        # 使用fit_transform方法对选定的特征列进行归一化
-        node_data[train_features] = scaler.fit_transform(node_data[train_features])
-        edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
+    train_features = node_data.columns[2:]
+    edge_features = edge_data.columns[2:-2]
 
-    return train_data, valid_data, node_data, edge_data
+    # 创建一个MinMaxScaler对象
+    scaler = MinMaxScaler()
+
+    # 使用fit_transform方法对选定的特征列进行归一化
+    node_data[train_features] = scaler.fit_transform(node_data[train_features])
+    edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
+
+    return node_data, edge_data
 
 
 # 构建权重矩阵
