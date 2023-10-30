@@ -12,7 +12,6 @@ if "__main__" == __name__:
 
     train_data, valid_data = data_process()
 
-    # ########## 测试（不加时间数据）
     train_ground_truth = np.array([train_data['active_index'], train_data['consume_index']])
     train_ground_truth = list(zip(*train_ground_truth))
 
@@ -35,7 +34,7 @@ if "__main__" == __name__:
 
     valid_X = torch.tensor(valid_X, dtype=torch.float32)
     valid_y = torch.tensor(valid_y, dtype=torch.float32)
-    #
+
     # 创建数据加载器
     batch_size = 10
     train_dataset = TimeSeriesDataset(X, y)
@@ -44,8 +43,6 @@ if "__main__" == __name__:
     valid_batch_size = 10
     valid_dataset = TimeSeriesDataset(valid_X, valid_y)
     valid_dataloader = DataLoader(valid_dataset, batch_size=valid_batch_size)
-
-    # ########## 测试（不加时间数据）
 
     # 参数设置
     input_size = 37

@@ -9,6 +9,8 @@ from data_process import TimeSeriesDataset, test_data_process
 if "__main__" == __name__:
     set = pd.read_csv('./dataset/node_test_4_A.csv')
     test_data = test_data_process()
+
+    # 数据拼接，将训练集和测试集拼接在一起，9行训练加4行测试
     data = pd.read_csv('./dataset/train_with_edge_data.csv')
 
     data = data.iloc[:, :-2]
