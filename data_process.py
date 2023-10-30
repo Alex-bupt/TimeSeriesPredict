@@ -1,83 +1,119 @@
+import os
+
 import networkx as nx
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 
 
+def data_merge():
+    node_data = pd.read_csv('./dataset/train_90.csv')
+    edge_data = pd.read_csv('./dataset/edge_90.csv')
 
+    test_node_data = pd.read_csv('./dataset/node_test_4_A.csv')
+    test_edge_data = pd.read_csv('./dataset/edge_test_4_A.csv')
 
-# 将id映射成数字然后归一化################################
+    node_data['F_1_EDGE'] = 0
+    node_data['F_2_EDGE'] = 0
 
+    # 将edge_data中的F_1按geohash6_point1和date_id分组并求和
+    edge_data_grouped_F1 = edge_data.groupby(['geohash6_point1', 'date_id'])['F_1'].sum().reset_index()
+
+    # 将edge_data中的F_2按geohash6_point2和date_id分组并求和
+    edge_data_grouped_F2 = edge_data.groupby(['geohash6_point2', 'date_id'])['F_2'].sum().reset_index()
+
+    # 在node_data中匹配并添加F_1_EDGE和F_2_EDGE
+    node_data = node_data.merge(edge_data_grouped_F1,
+                                how='left',
+                                left_on=['geohash_id', 'date_id'],
+                                right_on=['geohash6_point1', 'date_id'],
+                                suffixes=('', '_new'))
+    node_data['F_1_EDGE'] = node_data['F_1_new'].fillna(0)
+    node_data.drop(columns=['geohash6_point1', 'F_1_new'], inplace=True)
+
+    node_data = node_data.merge(edge_data_grouped_F2,
+                                how='left',
+                                left_on=['geohash_id', 'date_id'],
+                                right_on=['geohash6_point2', 'date_id'],
+                                suffixes=('', '_new'))
+    node_data['F_2_EDGE'] = node_data['F_2_new'].fillna(0)
+    node_data.drop(columns=['geohash6_point2', 'F_2_new'], inplace=True)
+
+    columns = list(node_data.columns)
+    columns.insert(-4, 'F_1_EDGE')
+    columns.insert(-4, 'F_2_EDGE')
+    node_data = node_data[columns]
+
+    node_data = node_data.iloc[:, :-2]
+
+    # 归一化F_2_EDGE，F_1_EDGE
+    scaler = MinMaxScaler()
+    node_data[['F_1_EDGE', 'F_2_EDGE']] = scaler.fit_transform(node_data[['F_1_EDGE', 'F_2_EDGE']])
+
+    # 保存结果
+    node_data.to_csv('./dataset/train_with_edge_data.csv', index=False)
+
+    test_node_data['F_1_EDGE'] = 0
+    test_node_data['F_2_EDGE'] = 0
+
+    # 将edge_data中的F_1按geohash6_point1和date_id分组并求和
+    test_edge_data_grouped_F1 = test_edge_data.groupby(['geohash6_point1', 'date_id'])['F_1'].sum().reset_index()
+    test_edge_data_grouped_F2 = test_edge_data.groupby(['geohash6_point2', 'date_id'])['F_2'].sum().reset_index()
+
+    # 在node_data中匹配并添加F_1_EDGE和F_2_EDGE
+    test_node_data = test_node_data.merge(test_edge_data_grouped_F1,
+                                          how='left',
+                                          left_on=['geohash_id', 'date_id'],
+                                          right_on=['geohash6_point1', 'date_id'],
+                                          suffixes=('', '_new'))
+
+    test_node_data['F_1_EDGE'] = test_node_data['F_1_new'].fillna(0)
+    test_node_data.drop(columns=['geohash6_point1', 'F_1_new'], inplace=True)
+
+    test_node_data = test_node_data.merge(test_edge_data_grouped_F2,
+                                            how='left',
+                                            left_on=['geohash_id', 'date_id'],
+                                            right_on=['geohash6_point2', 'date_id'],
+                                            suffixes=('', '_new'))
+
+    test_node_data['F_2_EDGE'] = test_node_data['F_2_new'].fillna(0)
+    test_node_data.drop(columns=['geohash6_point2', 'F_2_new'], inplace=True)
+
+    # 归一化F_2_EDGE，F_1_EDGE
+    scaler1 = MinMaxScaler()
+    test_node_data[['F_1_EDGE', 'F_2_EDGE']] = scaler1.fit_transform(test_node_data[['F_1_EDGE', 'F_2_EDGE']])
+
+    test_node_data.to_csv('./dataset/test_with_edge_data.csv', index=False)
 
 
 def data_process():
-    node_data = pd.read_csv('./dataset/train_90.csv')
-    edge_data = pd.read_csv('./dataset/edge_90.csv')
+    if not os.path.exists('./dataset/train_with_edge_data.csv'):
+        data_merge()
+    node_data = pd.read_csv('./dataset/train_with_edge_data.csv')
 
-    # 将id映射成数字然后归一化
-    unique_geohash_ids = node_data['geohash_id'].unique()
-    geohash_id_to_number = {geohash_id: i for i, geohash_id in enumerate(unique_geohash_ids)}
+    num_groups = len(node_data) // 45
 
-    node_data['geohash_id'] = node_data['geohash_id'].map(geohash_id_to_number)
-    edge_data['geohash6_point1'] = edge_data['geohash6_point1'].map(geohash_id_to_number)
-    edge_data['geohash6_point2'] = edge_data['geohash6_point2'].map(geohash_id_to_number)
+    # 初始化训练集和测试集
+    train_data = pd.DataFrame()
+    valid_data = pd.DataFrame()
 
-    # train_features = node_data.columns[2:-2]
-    # edge_features = edge_data.columns[2:-2]
-    #
-    # # 创建一个MinMaxScaler对象
-    # scaler = MinMaxScaler()
-    #
-    # # 使用fit_transform方法对选定的特征列进行归一化
-    # node_data[train_features] = scaler.fit_transform(node_data[train_features])
-    # edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
+    # 按照每组45行的方式分割数据
+    for i in range(num_groups):
+        start = i * 90
+        end = start + 80  # 前5行用于训练
+        train_data = pd.concat([train_data, node_data.iloc[start:end]])
 
-    # 切分数据集
-    cnt = int(len(node_data) / 30)
+        start = end
+        end = start + 10  # 后5行用于测试
+        valid_data = pd.concat([valid_data, node_data.iloc[start:end]])
 
-    # 将cnt*0.8取整作为训练集，剩下的作为验证集
-    train_data = node_data[:int(cnt * 0.9) * 30]
-    valid_data = node_data[int(cnt * 0.9) * 30:]
-
-    return train_data, valid_data, edge_data
+    return train_data, valid_data
 
 
 def test_data_process():
-    node_data = pd.read_csv('./dataset/node_test_4_A.csv')
-    edge_data = pd.read_csv('./dataset/edge_test_4_A.csv')
+    node_data = pd.read_csv('./dataset/test_with_edge_data.csv')
 
-    unique_geohash_ids = node_data['geohash_id'].unique()
-    geohash_id_to_number = {geohash_id: i for i, geohash_id in enumerate(unique_geohash_ids)}
-
-    node_data['geohash_id'] = node_data['geohash_id'].map(geohash_id_to_number)
-    edge_data['geohash6_point1'] = edge_data['geohash6_point1'].map(geohash_id_to_number)
-    edge_data['geohash6_point2'] = edge_data['geohash6_point2'].map(geohash_id_to_number)
-
-    # train_features = node_data.columns[2:]
-    # edge_features = edge_data.columns[2:-2]
-    #
-    # # 创建一个MinMaxScaler对象
-    # scaler = MinMaxScaler()
-    #
-    # # 使用fit_transform方法对选定的特征列进行归一化
-    # node_data[train_features] = scaler.fit_transform(node_data[train_features])
-    # edge_data[edge_features] = scaler.fit_transform(edge_data[edge_features])
-
-    return node_data, edge_data
-
-
-# 构建权重矩阵
-def build_weight_matrix():
-    node_data = pd.read_csv('./dataset/train_90.csv')
-    edge_data = pd.read_csv('./dataset/edge_90.csv')
-
-    unique_geohash_ids = node_data['geohash_id'].unique()
-    geohash_id_to_number = {geohash_id: i for i, geohash_id in enumerate(unique_geohash_ids)}
-
-    edge_data['geohash6_point1'] = edge_data['geohash6_point1'].map(geohash_id_to_number)
-    edge_data['geohash6_point2'] = edge_data['geohash6_point2'].map(geohash_id_to_number)
-
-    # 构建权重矩阵
+    return node_data
 
 
 def graph_build(train_data, edge_data):
@@ -113,12 +149,5 @@ class TimeSeriesDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-if "__name__" == "__main__":
-    train_data, valid_data, edge_data = data_process()
-    test_node_data, test_edge_data = test_data_process()
-    print(train_data.head())
-    print(valid_data.head())
-    print(edge_data.head())
-    print(test_node_data.head())
-    print(test_edge_data.head())
-
+if "__main__" == __name__:
+    train_data, valid_data = data_process()

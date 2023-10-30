@@ -10,7 +10,7 @@ from data_process import TimeSeriesDataset, data_process
 
 if "__main__" == __name__:
 
-    train_data, valid_data, _ = data_process()
+    train_data, valid_data = data_process()
 
     # ########## 测试（不加时间数据）
     train_ground_truth = np.array([train_data['active_index'], train_data['consume_index']])
@@ -41,15 +41,16 @@ if "__main__" == __name__:
     train_dataset = TimeSeriesDataset(X, y)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
 
+    valid_batch_size = 10
     valid_dataset = TimeSeriesDataset(valid_X, valid_y)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size)
+    valid_dataloader = DataLoader(valid_dataset, batch_size=valid_batch_size)
 
     # ########## 测试（不加时间数据）
 
     # 参数设置
-    input_size = 35
+    input_size = 37
     output_size = 2
-    num_channels = [68] * 4
+    num_channels = [128] * 4
     kernel_size = 2
     dropout = 0.2
     model = CNN.TCN(input_size, output_size, num_channels, kernel_size, dropout)
@@ -64,13 +65,12 @@ if "__main__" == __name__:
     best_loss = 999
     save_dir = "save"
 
-    # 训练(向前看9天，结合第10天预测第十天）
-    epochs = 30
+    epochs = 60
     for epoch in range(epochs):
         total_loss = 0
         for i, (X, y) in enumerate(train_dataloader):
-            y_pred = model(X.view(1, 35, 10))
-            loss = criterion(y_pred, y[-1])
+            y_pred = model(X.view(1, 37, 10))
+            loss = criterion(y_pred.view(2), y[-1])
             loss = torch.sqrt(loss)
             optimizer.zero_grad()
             loss.backward()
@@ -82,8 +82,8 @@ if "__main__" == __name__:
         # 验证(不进行参数更新）
         with torch.no_grad():
             for j, (X, y) in enumerate(valid_dataloader):
-                y_pred = model(X.unsqueeze(2))
-                loss = criterion(y_pred, y)
+                y_pred = model(X.view(1, 37, 10))
+                loss = criterion(y_pred.view(2), y[-1])
                 loss = torch.sqrt(loss)
                 total_loss += loss.item()
 
@@ -95,9 +95,9 @@ if "__main__" == __name__:
                 os.makedirs(save_dir)
 
             # 以下是保存模型参数的代码
-            torch.save(model.state_dict(), os.path.join(save_dir, "best_model_" + epoch + ".pth"))
+            torch.save(model.state_dict(), os.path.join(save_dir, "best_model.pth"))
             print("save model！")
 
-        # 每个epoch打印一次平均损失
+        # 每个epoch打印一次平均损
         print('Epoch {}, Valid_Loss {}'.format(epoch + 1, total_loss / len(valid_dataloader)))
-        print(f'best_loss{best_loss}')
+        print(f'best_loss:{best_loss}')

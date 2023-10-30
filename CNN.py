@@ -30,19 +30,19 @@ class TemporalBlock(nn.Module):
                                            stride=stride, padding=padding, dilation=dilation))
         # 经过conv1，输出的size其实是(Batch, input_channel, seq_len + padding)
         self.chomp1 = Chomp1d(padding)  # 裁剪掉多出来的padding部分，维持输出时间步为seq_len
-        self.relu1 = nn.Mish()
+        self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
 
         self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size,
                                            stride=stride, padding=padding, dilation=dilation))
         self.chomp2 = Chomp1d(padding)  # 裁剪掉多出来的padding部分，维持输出时间步为seq_len
-        self.relu2 = nn.Mish()
+        self.relu2 = nn.ReLU()
         self.dropout2 = nn.Dropout(dropout)
 
         self.net = nn.Sequential(self.conv1, self.chomp1, self.relu1, self.dropout1,
                                  self.conv2, self.chomp2, self.relu2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
-        self.relu = nn.Mish()
+        self.relu = nn.ReLU()
         self.init_weights()
 
     def init_weights(self):
