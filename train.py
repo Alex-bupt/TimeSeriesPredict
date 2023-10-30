@@ -37,7 +37,7 @@ if "__main__" == __name__:
     valid_y = torch.tensor(valid_y, dtype=torch.float32)
     #
     # 创建数据加载器
-    batch_size = 30
+    batch_size = 10
     train_dataset = TimeSeriesDataset(X, y)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
 
@@ -64,13 +64,13 @@ if "__main__" == __name__:
     best_loss = 999
     save_dir = "save"
 
-    # 训练
+    # 训练(向前看9天，结合第10天预测第十天）
     epochs = 30
     for epoch in range(epochs):
         total_loss = 0
         for i, (X, y) in enumerate(train_dataloader):
-            y_pred = model(X.unsqueeze(2))
-            loss = criterion(y_pred, y)
+            y_pred = model(X.view(1, 35, 10))
+            loss = criterion(y_pred, y[-1])
             loss = torch.sqrt(loss)
             optimizer.zero_grad()
             loss.backward()
