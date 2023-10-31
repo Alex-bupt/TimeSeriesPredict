@@ -97,15 +97,14 @@ def data_process():
     train_data = pd.DataFrame()
     valid_data = pd.DataFrame()
 
-    # 按照每组45行的方式分割数据
     for i in range(num_groups):
         start = i * 90
-        end = start + 80  # 前5行用于训练
+        end = start + 80  # 前80行用于训练
         train_data = pd.concat([train_data, node_data.iloc[start:end]])
 
-        start = end
-        end = start + 10  # 后5行用于测试
-        valid_data = pd.concat([valid_data, node_data.iloc[start:end]])
+        start2 = end - 10
+        end2 = start2 + 20  # 后20行用于测试
+        valid_data = pd.concat([valid_data, node_data.iloc[start2:end2]])
 
     return train_data, valid_data
 
